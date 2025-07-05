@@ -1,3 +1,7 @@
+# These are the examples from manimGL :  https://github.com/3b1b/manim/blob/master/docs/source/getting_started/example_scenes.rst
+# all the credits goes to the origianal author.
+
+
 from manim_imports import *
 
 
@@ -367,3 +371,144 @@ class GraphExample(Scene):
         self.play(x_tracker.animate.set_value(4), run_time=3)
         self.play(x_tracker.animate.set_value(-2), run_time=3)
         self.wait()
+
+
+class SurfaceExample(Scene):
+    CONFIG = {"camera_config": ThreeDCamera}
+
+    import os
+
+    os.makedirs("downloads", exist_ok=True)
+
+    def construct(self):
+        surface_text = Text("Use 3d scenes they area amazing!")
+        surface_text.fix_in_frame()
+        self.play(surface_text.animate.to_edge(UP))
+        # self.add(surface_text)
+        self.wait()
+
+        torus1 = Torus(r1=1, r2=1)
+        torus2 = Torus(r1=3, r2=1)
+        sphere = Sphere(radius=3, resolution=torus1.resolution)
+
+        day_texture = "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Whole_world_-_land_and_oceans.jpg/1280px-Whole_world_-_land_and_oceans.jpg"
+        night_texture = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/The_earth_at_night.jpg/1280px-The_earth_at_night.jpg"
+
+        surfaces = [
+            TexturedSurface(surface, day_texture, night_texture)
+            for surface in [sphere, torus1, torus2]
+        ]
+
+        for mob in surfaces:
+            mob.shift(IN)
+            mob.mesh = SurfaceMesh(mob)
+            mob.mesh.set_stroke(BLUE, 1, opacity=0.5)
+
+        # set camera perspective
+        frame = self.camera.frame
+        frame.set_euler_angles(theta=-30 * DEG, phi=70 * DEG)
+
+        surface = surfaces[0]
+        self.play(
+            FadeIn(surface), ShowCreation(surface.mesh, lag_ratio=0.01, run_time=3)
+        )
+
+        for mob in surfaces:
+            mob.add(mob.mesh)
+
+        surface.save_state()
+
+        self.play(Rotate(surface, PI / 2), run_time=2)
+        for mob in surfaces[1:]:
+            mob.rotate(PI / 2)
+
+        self.play(Transform(surface, surfaces[1]), run_time=3)
+
+        self.play(
+            Transform(surface, surfaces[2]),
+            frame.animate.increment_phi(-10 * DEG),
+            frame.animate.increment_theta(-20 * DEG),
+            run_time=3,
+        )
+
+        # add ambient rotation
+
+        frame.add_updater(lambda m, dt: m.increment_theta(-0.1 * dt))
+
+        # light position
+
+        light_text = Text("You can move the light source!")
+        light_text.move_to(surface_text)
+        light_text.fix_in_frame()
+
+        self.play(FadeTransform(surface_text, light_text))
+        light = self.camera.light_source
+        self.add(light)
+        light.save_state()
+        self.play(light.animate.move_to(3 * IN), run_time=5)
+        self.play(light.animate.shift(10 * OUT), run_time=5)
+
+        drag_text = Text("Move me!")
+        drag_text.move_to(light_text)
+        drag_text.fix_in_frame()
+
+        self.play(FadeTransform(light_text, drag_text))
+        self.wait()
+
+
+class OpeningManimExample(Scene):
+    def construct(self):
+        intro_words = Text(
+            """ 
+                    The sole focus of this channel is to 
+                    simplify the German Grammar. 
+                """
+        )
+
+        intro_words.to_edge(UP)
+
+        self.play(Write(intro_words))
+        self.wait(2)
+
+        # Linear Transform
+        grid = NumberPlane((-10, 10), (-5, 5))
+        matrix = [[1, 1], [0, 1]]
+        linear_transform_words = VGroup(
+            Text("This is what a matrix"), IntegerMatrix(matrix), Text("looks like")
+        )
+
+        linear_transform_words.arrange(RIGHT)
+        linear_transform_words.to_edge(UP)
+        linear_transform_words.set_stroke(BLACK)
+
+        self.play(
+            ShowCreation(grid), FadeTransform(intro_words, linear_transform_words)
+        )
+        self.wait()
+        self.play(grid.animate.apply_matrix(matrix), run_time=3)
+        self.wait()
+
+        # complex map
+        c_grid = ComplexPlane()
+        moving_c_grid = c_grid.copy()
+        moving_c_grid.prepare_for_nonlinear_transform()
+        c_grid.set_stroke(BLUE_E, 1)
+        c_grid.add_coordinate_labels(font_size=24)
+        complex_map_words = TexText(
+            """
+                                    Just some random shit!!!
+                                    """
+        )
+        complex_map_words.to_corner(UR)
+        complex_map_words.set_stroke(BLACK)
+        self.play(
+            FadeOut(grid),
+            Write(c_grid, run_time=3),
+            FadeIn(moving_c_grid),
+            FadeTransform(linear_transform_words, complex_map_words),
+        )
+        self.wait()
+        self.play(
+            moving_c_grid.animate.apply_complex_function(lambda z: z**2), run_time=6
+        )
+        self.wait(2)
